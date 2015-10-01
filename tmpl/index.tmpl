@@ -1,0 +1,12 @@
+{{ template "head" }}
+<main>
+	<section>
+		<h3>Add a new URL</h3>
+		<form id="addurlform" name="addurlform" method="POST">
+			<input type="url" id="newurl" name="newurl" placeholder="http://www.podcast.com/podcast"
+			pattern="(http|https|ftp)\:\/\/[a-zA-Z0-9\-\.\/]*" />
+			<input type="submit" value="Add" />
+		</form>
+	</section>
+</main>
+{{ template "close" }}
