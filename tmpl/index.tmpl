@@ -2,11 +2,20 @@
 <main>
 	<section>
 		<h3>Add a new URL</h3>
-		<form id="addurlform" name="addurlform" method="POST">
+		<form id="addurlform" name="addurlform" method="POST" action="/add">
+			<input type="text" id="name" name="name" placeholder="Podcast Name">
+			<br />
 			<input type="url" id="newurl" name="newurl" placeholder="http://www.podcast.com/podcast"
 			pattern="(http|https|ftp)\:\/\/[a-zA-Z0-9\-\.\/]*" />
 			<input type="submit" value="Add" />
 		</form>
+	</section>
+	<section>
+	{{range $cast := .Casts}}
+		<p>{{$cast.Name}}: {{$cast.Link}} <button onclick="removeurl('{{$cast.Name}}')">Delete me</button><button onclick="getfeed('{{$cast.Name}}')"> Get feed </button></p>
+	{{ end }}
+	</section>
+	<section class="feed">
 	</section>
 </main>
 {{ template "close" }}
