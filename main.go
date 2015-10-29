@@ -19,12 +19,12 @@ var templates *template.Template
 
 type Page struct {
 	Casts	[]Cast
+	Feed pr.Rss
 }
 type JSONResponse struct {
 	Response string
 	Message	string
 }
-
 type Server struct {
 	Config map[string]string
 	Casts map[string][]Cast
@@ -32,7 +32,6 @@ type Server struct {
 	S_DIR string //:= "./static/"
 	R_DIR string //:= "./res/"
 }
-
 type Cast struct {
 	Name	string
 	Link	string
@@ -140,7 +139,7 @@ func makeWebHandler(fn func (http.ResponseWriter, *http.Request)) http.HandlerFu
 			if m == nil {
 				http.NotFound(w, r)
 				return
-			} 
+			}
 		}
 		fn(w, r)
 	}
@@ -160,9 +159,9 @@ func (srv *Server)AddHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		jo.Response = "Error"
 		jo.Message = fmt.Sprint(err)
-	} else { 
+	} else {
 		url := r.Form["newurl"][0] // parse form assumes multi value for each - we only need the first one
-		name := r.Form["name"][0] 
+		name := r.Form["name"][0]
 		log.Println(url)
 		if strings.HasPrefix(url, "http") {
 			c := Cast {name, url}
@@ -188,22 +187,28 @@ func (srv *Server)AddHandler(w http.ResponseWriter, r *http.Request) {
 }
 func (srv *Server)DeleteHandler(w http.ResponseWriter, r *http.Request) {
 	jo := JSONResponse{}
+	jo.Response = "Error"
 	err := r.ParseForm()
 	if  err != nil {
 		log.Println(err)
-		jo.Response = "Error"
 		jo.Message = fmt.Sprint(err)
 	} else {
 		name := r.Form["name"][0] // parse form assumes multi value for each - we only need the first one
-		srv.Casts["casts"] = DeleteCast(srv.Casts["casts"], name)		
-		srv.WriteBackCasts()
-		jo.Response = "Success"
-		jo.Message = fmt.Sprint("Removed " + name)
+		srv.Casts["casts"] = DeleteCast(srv.Casts["casts"], name)
+		err = srv.WriteBackCasts()
+		if err != nil {
+			log.Println(err)
+			jo.Message = fmt.Sprint(err)
+		} else {
+		  jo.Response = "Success"
+		  jo.Message = fmt.Sprint("Removed " + name)
+		}
 	}
-	renderJson(w, jo)	
+	renderJson(w, jo)
 }
 func (srv *Server)FeedHandler(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
+	p := &Page{}
 	if err != nil {
 		http.NotFound(w, r)
 		return
@@ -222,13 +227,13 @@ func (srv *Server)FeedHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println(response)
 		rss, err := pr.ResponseToRss(response)
 		if err != nil {
-			log.Println(err)
+			log.Println("Error parsing feed: ", err)
 		} else {
-			log.Println(rss)
-			log.Println(rss.Channel.Title)
+			log.Println(" RSS:", rss)
+			log.Println(" TITLE:", rss.Channel.Items[0].Enclosure)
+			p.Feed = rss
 		}
 	}
-	p := &Page{}
 	renderTemplate(w, "feed", p)
 }
 
@@ -267,4 +272,3 @@ func main() {
 	var input string
 	fmt.Scanln(&input)
 }
-

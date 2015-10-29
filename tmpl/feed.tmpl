@@ -1,6 +1,11 @@
 {{ template "head" }}
 <main>
 	<section class="feeddata">
+		<h3>{{ .Feed.Channel.Title }}</h3>
+		{{ range $i := .Feed.Channel.Items}}
+			<p> {{$i.Title}}</p>
+			<a href="{{$i.Enclosure.Url}}">Download {{$i.Enclosure.Type}}</a>
+		{{end}}
 	</section>
 </main>
 {{ template "close" }}
