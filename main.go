@@ -133,7 +133,7 @@ func renderJson(w http.ResponseWriter, j JSONResponse) {
 
 func makeWebHandler(fn func (http.ResponseWriter, *http.Request)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		log.Println("Handling page ", r.URL.Path)
+		//log.Println("Handling page ", r.URL.Path)
 		if r.URL.Path != "/" { // if it is just / then do index
 			m := validWebPath.FindStringSubmatch(r.URL.Path)
 			if m == nil {
@@ -147,8 +147,6 @@ func makeWebHandler(fn func (http.ResponseWriter, *http.Request)) http.HandlerFu
 
 func (srv *Server)DashHandler(w http.ResponseWriter, r *http.Request) {
 	p := &Page{Casts: srv.Casts["casts"]}
-	rss := pr.Rss{}
-	log.Println(rss)
 	renderTemplate(w, "index", p)
 }
 
@@ -162,7 +160,7 @@ func (srv *Server)AddHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		url := r.Form["newurl"][0] // parse form assumes multi value for each - we only need the first one
 		name := r.Form["name"][0]
-		log.Println(url)
+		//log.Println(url)
 		if strings.HasPrefix(url, "http") {
 			c := Cast {name, url}
 			srv.Casts["casts"] = append(srv.Casts["casts"], c)
@@ -224,13 +222,18 @@ func (srv *Server)FeedHandler(w http.ResponseWriter, r *http.Request) {
 			log.Println(herr)
 		}
 		defer response.Body.Close()
-		log.Println(response)
+		//log.Println(response)
 		rss, err := pr.ResponseToRss(response)
 		if err != nil {
 			log.Println("Error parsing feed: ", err)
 		} else {
-			log.Println(" RSS:", rss)
-			log.Println(" TITLE:", rss.Channel.Items[0].Enclosure)
+			//log.Println(" TITLE:", rss.Channel.Items[0].Enclosure)
+			toget := 4
+			if len(rss.Channel.Items) > 0 {
+				if len(rss.Channel.Items) >= toget {
+					rss.Channel.Items = rss.Channel.Items[:toget]
+				}
+			}
 			p.Feed = rss
 		}
 	}
@@ -259,6 +262,7 @@ func (srv *Server)StartServer() {
 		Handler:        handlers,
 	}
 	templates = template.Must(template.ParseGlob(srv.T_DIR+"*.tmpl"))
+	log.Printf("Launch http://%v:%v in browser", srv.Config["Address"], srv.Config["Port"])
 	log.Fatal(s.ListenAndServe())
 }
 
