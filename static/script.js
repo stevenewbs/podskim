@@ -2,10 +2,15 @@
 function init() {
 	console.log("HI");
 	$("form").submit(function( event ) {
-		addurl($(this));	
+		addurl($(this));
 		event.preventDefault();
 	});
 	//alert("hi");
+	$('.feed').each(function() {
+		var id = $(this).attr('id')
+		var name = $(this).attr('data-name')
+		getfeed(id, name, 1)
+	});
 }
 
 function reload() {
@@ -22,7 +27,7 @@ function addurl(obj) {
 	}
 	else {
 		//ShowAlert("Adding..." + url);
-		//console.log("Url is " + url);	
+		//console.log("Url is " + url);
 		$.post("/add", {newurl: url, name: name }, "json").done(function (json) {
                         //alert("done");
                         reload()
@@ -38,7 +43,7 @@ function removeurl(name) {
 	y = confirm("Are you sure you want to remove "+ name + "?")
 	if (y == true) {
 		//ShowAlert("Adding..." + url);
-		console.log("Removing " + name);	
+		console.log("Removing " + name);
 		$.post("/delete", {name: name }, "json").done(function (json) {
 			//alert("done");
 			reload()
@@ -49,16 +54,14 @@ function removeurl(name) {
 	}
 }
 
-function getfeed(name) {
+function getfeed(id, name, amount) {
 	console.log("Getting "+ name)
-	
-	$('.feed').load("/feed .feeddata", {name: name }, function () {
-		alert("done");
+
+	$('#' + id).load("/feed .feeddata", {name: name, amount: amount}, function () {
+		//alert("done");
 	});
 }
 
 function ShowAlert(string) {
 	alert(string);
 }
-
-

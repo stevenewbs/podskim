@@ -12,7 +12,11 @@
 	</section>
 	<section>
 	{{range $cast := .Casts}}
-		<p>{{$cast.Name}}: {{$cast.Link}} <button onclick="removeurl('{{$cast.Name}}')">Delete me</button><button onclick="getfeed('{{$cast.Name}}')"> Get feed </button></p>
+		<h4>{{$cast.Name}}</h4>
+		<button class="round bg-secondary-2-1" onclick="removeurl('{{$cast.Name}}')">Delete me</button>
+		<button class="round bg-secondary-1-1" onclick="getfeed('{{$cast.Num}}', '{{$cast.Name}}', 0)">Get More</button>
+		<section id="{{$cast.Num}}" data-name="{{$cast.Name}}" class="feed">
+		</section>
 	{{ end }}
 	</section>
 	<section class="feed">

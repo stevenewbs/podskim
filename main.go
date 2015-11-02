@@ -12,6 +12,7 @@ import (
 	"strings"
 	"os"
 	"errors"
+	"strconv"
 )
 
 var validWebPath = regexp.MustCompile("^/([a-zA-Z0-9]+)$")
@@ -33,6 +34,7 @@ type Server struct {
 	R_DIR string //:= "./res/"
 }
 type Cast struct {
+	Num		string
 	Name	string
 	Link	string
 }
@@ -162,7 +164,8 @@ func (srv *Server)AddHandler(w http.ResponseWriter, r *http.Request) {
 		name := r.Form["name"][0]
 		//log.Println(url)
 		if strings.HasPrefix(url, "http") {
-			c := Cast {name, url}
+			num := strconv.Itoa(len(srv.Casts["casts"]) + 1)
+			c := Cast {num, name, url}
 			srv.Casts["casts"] = append(srv.Casts["casts"], c)
 			err = srv.WriteBackCasts()
 			if err != nil {
@@ -212,7 +215,11 @@ func (srv *Server)FeedHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	} else {
 		n := r.Form["name"][0]
-		log.Println("Going to get ", n)
+		a, perr := strconv.Atoi(r.Form["amount"][0])
+		if perr != nil {
+			a = 1
+		}
+		log.Println("Going to get ", n, " - top ", a)
 		c, err := FindCast(srv.Casts["casts"], n)
 		if err != nil {
 			http.NotFound(w, r)
@@ -228,10 +235,10 @@ func (srv *Server)FeedHandler(w http.ResponseWriter, r *http.Request) {
 			log.Println("Error parsing feed: ", err)
 		} else {
 			//log.Println(" TITLE:", rss.Channel.Items[0].Enclosure)
-			toget := 4
+
 			if len(rss.Channel.Items) > 0 {
-				if len(rss.Channel.Items) >= toget {
-					rss.Channel.Items = rss.Channel.Items[:toget]
+				if a > 0 && len(rss.Channel.Items) >= a { // only retrieve the amount we asked for
+					rss.Channel.Items = rss.Channel.Items[:a]
 				}
 			}
 			p.Feed = rss
