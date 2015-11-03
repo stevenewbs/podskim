@@ -3,23 +3,21 @@
 	<section>
 		<h3>Add a new URL</h3>
 		<form id="addurlform" name="addurlform" method="POST" action="/add">
-			<input type="text" id="name" name="name" placeholder="Podcast Name">
+			<input type="text" id="name" class="round" name="name" placeholder="Podcast Name">
 			<br />
-			<input type="url" id="newurl" name="newurl" placeholder="http://www.podcast.com/podcast"
+			<input type="url" id="newurl" class="round" name="newurl" placeholder="http://www.podcast.com/podcast"
 			pattern="(http|https|ftp)\:\/\/[a-zA-Z0-9\-\.\/]*" />
-			<input type="submit" value="Add" />
+			<button type="submit">Add</button>
 		</form>
 	</section>
-	<section>
 	{{range $cast := .Casts}}
-		<h4>{{$cast.Name}}</h4>
-		<button class="round bg-secondary-2-1" onclick="removeurl('{{$cast.Name}}')">Delete me</button>
-		<button class="round bg-secondary-1-1" onclick="getfeed('{{$cast.Num}}', '{{$cast.Name}}', 0)">Get More</button>
-		<section id="{{$cast.Num}}" data-name="{{$cast.Name}}" class="feed">
+		<section class="feedcontainer round">
+			<button class="bg-primary-0 color-primary-1" onclick="removeurl('{{$cast.Name}}')">Delete me</button>
+			<button class="bg-primary-0 color-primary-1" onclick="getfeed('{{$cast.Num}}', '{{$cast.Name}}', 0)">Get More</button>
+			<h4>{{$cast.Name}}</h4>
+			<section id="{{$cast.Num}}" data-name="{{$cast.Name}}" class="feed">
+			</section>
 		</section>
 	{{ end }}
-	</section>
-	<section class="feed">
-	</section>
 </main>
 {{ template "close" }}
