@@ -86,13 +86,10 @@ func (srv *Server)CreateConfig() {
 }
 
 func (srv *Server)LoadConfig() error {
-	if _, err := os.Stat(srv.MAIN + "config.json"); os.IsNotExist(err)  {
+	if _, err := os.Stat(srv.R_DIR + "config.json"); os.IsNotExist(err)  {
 		log.Println("Creating config")
 		srv.CreateConfig()
-	} else {
-		log.Println("didnt error on config")
 	}
-
 	s, err := ioutil.ReadFile(srv.R_DIR + "config.json")
 	if err != nil {
 		log.Println("Error loading configuration: ", err)
@@ -140,7 +137,7 @@ func (srv *Server)WriteBackCasts() error {
 		log.Println(err)
 		return err
 	}
-	err = ioutil.WriteFile(srv.R_DIR + "urls.json", jsonobj, os.ModeAppend)
+	err = ioutil.WriteFile(srv.R_DIR + "urls.json", jsonobj, 0644|os.ModeAppend)
 	if err != nil {
 		log.Println(err)
 		return err

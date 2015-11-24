@@ -1,6 +1,11 @@
 
 function init() {
-	console.log("HI");
+	window.onbeforeunload = function (e) {
+		//alert("Hi");
+		Quit();
+  	return "bibble"
+	};
+
 	$("form").submit(function( event ) {
 		addurl($(this));
 		event.preventDefault();
@@ -67,9 +72,5 @@ function ShowAlert(string) {
 }
 
 function Quit() {
-	if (confirm("This will stop Podskim - are you sure?")) {
-		$.get("/quit").done(function (){
-			window.close();
-		})
-	}
+	$.get("/quit");
 }
