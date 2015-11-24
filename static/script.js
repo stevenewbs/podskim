@@ -65,3 +65,11 @@ function getfeed(id, name, amount) {
 function ShowAlert(string) {
 	alert(string);
 }
+
+function Quit() {
+	if (confirm("This will stop Podskim - are you sure?")) {
+		$.get("/quit").done(function (){
+			window.close();
+		})
+	}
+}

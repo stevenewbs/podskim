@@ -13,8 +13,9 @@ import (
 	"os"
 	"errors"
 	"strconv"
+	"sync"
 )
-
+var wg sync.WaitGroup
 var validWebPath = regexp.MustCompile("^/([a-zA-Z0-9]+)$")
 var templates *template.Template
 
@@ -27,14 +28,16 @@ type JSONResponse struct {
 	Message	string
 }
 type Server struct {
+	S *http.Server
 	Config map[string]string
 	Casts map[string][]Cast
-	T_DIR string //:= "./tmpl/"
-	S_DIR string //:= "./static/"
-	R_DIR string //:= "./res/"
+	MAIN string //:= "~/.podskim"
+	T_DIR string //:= MAIN + "/tmpl/"
+	S_DIR string //:= MAIN + "/static/"
+	R_DIR string //:= MAIN + "/res/"
 }
 type Cast struct {
-	Num		string
+	Num	string
 	Name	string
 	Link	string
 }
@@ -65,7 +68,31 @@ func FindCast(c []Cast, n string) (Cast, error) {
 	return r, errors.New("Not found in this array")
 }
 
+func (srv *Server)CreateConfig() {
+	err := os.MkdirAll(srv.R_DIR, 0755)
+	if err != nil {
+		log.Println("Cannot create config dir:", err)
+	}
+	srv.Config = make(map[string]string)
+	srv.Config["Port"] = "8080"
+	srv.Config["Address"] = "127.0.0.1"
+	conf, _ := json.Marshal(srv.Config)
+	log.Println("Writing to: ", srv.R_DIR + "config.json")
+	err = ioutil.WriteFile(srv.R_DIR + "config.json", conf, 0644)
+        if err != nil {
+                log.Println(err)
+        }
+	log.Println("Config dir has been created")
+}
+
 func (srv *Server)LoadConfig() error {
+	if _, err := os.Stat(srv.MAIN + "config.json"); os.IsNotExist(err)  {
+		log.Println("Creating config")
+		srv.CreateConfig()
+	} else {
+		log.Println("didnt error on config")
+	}
+
 	s, err := ioutil.ReadFile(srv.R_DIR + "config.json")
 	if err != nil {
 		log.Println("Error loading configuration: ", err)
@@ -88,12 +115,16 @@ func (srv *Server)LoadConfig() error {
 }
 
 func (srv *Server)LoadCasts() error {
+	c := map[string][]Cast{}
 	s, err := ioutil.ReadFile(srv.R_DIR + "urls.json")
+	if os.IsNotExist(err) {
+		srv.Casts = c
+		return nil
+	}
 	if err != nil {
 		log.Println("Error loading urls: ", err)
 		return err
 	}
-	c := map[string][]Cast{}
 	err = json.Unmarshal(s, &c)
 	if err != nil {
 		log.Println("Error parsing urls - please check urls.json: ", err)
@@ -247,7 +278,14 @@ func (srv *Server)FeedHandler(w http.ResponseWriter, r *http.Request) {
 	renderTemplate(w, "feed", p)
 }
 
+func (srv *Server)QuitHandler(w http.ResponseWriter, r *http.Request) {
+	wg.Done()
+	srv.S = nil
+	return
+}
+
 func (srv *Server)StartServer() {
+	defer wg.Done()
 	err := srv.LoadConfig()
 	if err != nil {
 		//log.Println(err);
@@ -258,28 +296,57 @@ func (srv *Server)StartServer() {
 		log.Println(err)
 		return
 	}
-	handlers := http.NewServeMux()
-	handlers.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(srv.S_DIR))))
-	handlers.Handle("/add", makeWebHandler(srv.AddHandler))
-	handlers.Handle("/delete", makeWebHandler(srv.DeleteHandler))
-	handlers.Handle("/feed", makeWebHandler(srv.FeedHandler))
-	handlers.Handle("/", makeWebHandler(srv.DashHandler))
-	s := &http.Server{
-		Addr:		srv.Config["Address"] + ":" + srv.Config["Port"],
-		Handler:        handlers,
+	cont := true
+	cont, err = exists(srv.S_DIR)
+	if err != nil {
+		log.Println("Error with Static Directory:", err)
 	}
-	templates = template.Must(template.ParseGlob(srv.T_DIR+"*.tmpl"))
-	log.Printf("Launch http://%v:%v in browser", srv.Config["Address"], srv.Config["Port"])
-	log.Fatal(s.ListenAndServe())
+	if cont == false {log.Println("Static dir not found")}
+	cont, err = exists(srv.T_DIR)
+	if err != nil {
+		log.Println("Error with Template Directory:", err)
+	}
+	if cont == false { log.Println("Template dir not found") }
+	if cont {
+		handlers := http.NewServeMux()
+		handlers.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(srv.S_DIR))))
+		handlers.Handle("/add", makeWebHandler(srv.AddHandler))
+		handlers.Handle("/delete", makeWebHandler(srv.DeleteHandler))
+		handlers.Handle("/feed", makeWebHandler(srv.FeedHandler))
+		handlers.Handle("/quit", makeWebHandler(srv.QuitHandler))
+		handlers.Handle("/", makeWebHandler(srv.DashHandler))
+		srv.S = &http.Server{
+			Addr:		srv.Config["Address"] + ":" + srv.Config["Port"],
+			Handler:        handlers,
+		}
+		templates = template.Must(template.ParseGlob(srv.T_DIR+"*.tmpl"))
+		log.Printf("Launch http://%v:%v in browser", srv.Config["Address"], srv.Config["Port"])
+		log.Fatal(srv.S.ListenAndServe())
+	}
+}
+
+func exists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 func main() {
 	s := new(Server)
-	s.T_DIR = "./tmpl/"
-	s.S_DIR = "./static/"
-	s.R_DIR = "./res/"
+	s.MAIN = os.Getenv("HOME") + "/.podskim/"
+	s.T_DIR = s.MAIN + "tmpl/"
+	s.S_DIR = s.MAIN + "static/"
+	s.R_DIR = s.MAIN + "res/"
+
+	wg.Add(1)
 	go s.StartServer()
 	log.Println("Web routine running...")
-	var input string
-	fmt.Scanln(&input)
+	wg.Wait()
+	//var input string
+	//fmt.Scanln(&input)
 }
