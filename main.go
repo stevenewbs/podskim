@@ -13,9 +13,7 @@ import (
 	"os"
 	"errors"
 	"strconv"
-	"sync"
 )
-var wg sync.WaitGroup
 var validWebPath = regexp.MustCompile("^/([a-zA-Z0-9]+)$")
 var templates *template.Template
 
@@ -275,14 +273,7 @@ func (srv *Server)FeedHandler(w http.ResponseWriter, r *http.Request) {
 	renderTemplate(w, "feed", p)
 }
 
-func (srv *Server)QuitHandler(w http.ResponseWriter, r *http.Request) {
-	wg.Done()
-	srv.S = nil
-	return
-}
-
 func (srv *Server)StartServer() {
-	defer wg.Done()
 	err := srv.LoadConfig()
 	if err != nil {
 		//log.Println(err);
@@ -310,7 +301,6 @@ func (srv *Server)StartServer() {
 		handlers.Handle("/add", makeWebHandler(srv.AddHandler))
 		handlers.Handle("/delete", makeWebHandler(srv.DeleteHandler))
 		handlers.Handle("/feed", makeWebHandler(srv.FeedHandler))
-		handlers.Handle("/quit", makeWebHandler(srv.QuitHandler))
 		handlers.Handle("/", makeWebHandler(srv.DashHandler))
 		srv.S = &http.Server{
 			Addr:		srv.Config["Address"] + ":" + srv.Config["Port"],
@@ -339,11 +329,6 @@ func main() {
 	s.T_DIR = s.MAIN + "tmpl/"
 	s.S_DIR = s.MAIN + "static/"
 	s.R_DIR = s.MAIN + "res/"
-
-	wg.Add(1)
-	go s.StartServer()
-	log.Println("Web routine running...")
-	wg.Wait()
-	//var input string
-	//fmt.Scanln(&input)
+  log.Println("Web routine running...")
+	s.StartServer()
 }

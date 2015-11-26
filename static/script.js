@@ -1,11 +1,5 @@
 
 function init() {
-	window.onbeforeunload = function (e) {
-		//alert("Hi");
-		Quit();
-  	return "bibble"
-	};
-
 	$("form").submit(function( event ) {
 		addurl($(this));
 		event.preventDefault();
@@ -69,8 +63,4 @@ function getfeed(id, name, amount) {
 
 function ShowAlert(string) {
 	alert(string);
-}
-
-function Quit() {
-	$.get("/quit");
 }
